@@ -1,6 +1,6 @@
 # Qwen3.8-Flash-Next 177B on an RTX 5090 Laptop
 
-**24 GB VRAM + 64 GB RAM · 256K Context · 93.5 tok/s (Strata) / 25 tok/s (llama.cpp) · Vision Enabled**
+**24 GB VRAM + 64 GB RAM · 256K Context · 110 tok/s peak · 100+ sustained · Vision Enabled**
 
 [中文 →](./README.md) ｜ **English**
 
@@ -8,26 +8,26 @@
 ![VRAM](https://img.shields.io/badge/VRAM-24%20GB-0969da?style=flat-square)
 ![RAM](https://img.shields.io/badge/RAM-64%20GB-0969da?style=flat-square)
 ![Context](https://img.shields.io/badge/context-256K%20full-2ea44f?style=flat-square)
-![Speed](https://img.shields.io/badge/speed-25.0%20tok%2Fs-8250df?style=flat-square)
-![Quant](https://img.shields.io/badge/quant-AD--3.84bpw-bf8700?style=flat-square)
+![Speed](https://img.shields.io/badge/speed-up%20to%20110%20tok%2Fs-8250df?style=flat-square)
+![Quant](https://img.shields.io/badge/quant-IQ3_XXS-bf8700?style=flat-square)
 ![Vision](https://img.shields.io/badge/vision-enabled-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 ---
 
-## ⚡ Strata engine era — 26 measured rounds · 7 quant tiers screened · 25+ parameter sweeps · 25 → 93.5 tok/s
+## ⚡ Strata engine era — 26 measured rounds · 7 quant tiers screened · 25+ parameter sweeps · peak 110 tok/s
 
-**The screening**: 2 engine families (llama.cpp b10840/b10889, Strata 0.1.27/0.1.28), 7 quant tiers (AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16), 25+ parameter sweep points, 12 hypotheses eliminated one by one — landing on two "bests":
+**The screening**: 2 engine families (legacy CPU-offload engine, Strata 0.1.27/0.1.28), 7 quant tiers (AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16), 25+ parameter sweep points, 12 hypotheses eliminated one by one — landing on two "bests":
 
-- **Speed-first**: ISTA-DASLab GSQ-RCO Q2_0 (full 512-expert) · **93.5 tok/s** (3.7x over the llama.cpp era; matches the desktop 5070 reference)
-- **Quality-first**: ISTA-DASLab GSQ-RCO IQ3_XXS (full 512-expert) · 77.4 tok/s (74.4 tok/s at 256K + Vision, the daily config)
+- **Speed-first**: ISTA-DASLab GSQ-RCO Q2_0 (full 512-expert) · **93.5 tok/s** (matches the desktop 5070 reference)
+- **Quality-first (current daily driver)**: ISTA-DASLab GSQ-RCO IQ3_XXS (full 512-expert) · 77.4 tok/s benchmark; **110.9 tok/s peak** on real-world workloads, 101-103 tok/s on 3,000+ token outputs (256K + Vision both on)
 - Bonus: ISTA-DASLab Coder IQ1_M (256/512-expert pruned; 62.5 tok/s, half the RAM — multi-instance / extra-long context backup)
 
 ![speed comparison](./assets/speed-comparison.svg)
 
 ### Four headline findings
 
-1. **GPU and CPU saturate together, for the first time**: llama.cpp pinned one CPU core at 100% while the GPU idled at 20-40%; Strata's three-tier scheme (hot-expert VRAM cache + CPU pool + overlapping MTP pipeline) loads both processors at once — the structural reason behind the 3.7x
+1. **GPU and CPU saturate together, for the first time**: legacy CPU-offload engines pinned one CPU core at 100% while the GPU idled at 20-40%; Strata's three-tier scheme (hot-expert VRAM cache + CPU pool + overlapping MTP pipeline) loads both processors at once — the structural reason behind the multiple-fold gain
 2. **The dead-MTP mystery**: 20 of 31 drafter weight files were corrupted downloads (a mirror ignored the HTTP Range header; the tool saved the shard headers). sha256 over downloaded bytes cannot catch this. Self-compiled the engine with NaN probes → re-fetched → MTP acceptance 0% → 70.8%. Full postmortem: [docs/mtp-corruption-postmortem.md](./docs/mtp-corruption-postmortem.md) (filed upstream as [Strata#327](https://github.com/Niko1221/Strata/issues/327), **confirmed and fixed in v0.1.32**: HTTP 206 + Content-Range enforced, per-tensor SHA-256 against the pinned revision, corrupt tensors auto re-fetched)
 3. **The spec_min_p peak moves per model**: Q2_0 peaks at 0.3, IQ3_XXS at 0.7 — re-sweep on every model change (curve below)
 4. **256K context is nearly free**: with KV streaming, 65K/128K/256K cost the same; verified stable on 64 GB RAM. Vision coexists with 256K (≤1,024 tokens/image — 250+ images per conversation)
