@@ -34,6 +34,22 @@
 
 ![spec_min_p sweep](./assets/spec-minp-sweep.svg)
 
+## 🤔 同一台 5090：本仓库 177B MoE vs [27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal) —— 怎么选？
+
+两个仓库是同一台 RTX 5090 Laptop 24GB 上的两种使用姿势。差别不在谁更强，在**这台电脑当时扮演什么角色**：
+
+| | **Flash-Next 177B MoE**（本仓库） | [Qwen3.8-27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal) |
+|---|---|---|
+| decode 速度 | **峰值 110.9 / 长输出 101-103 tok/s** | 74-78 tok/s |
+| 稳定上下文 | **256K** | 160K（180K 起是显存悬崖） |
+| CPU | **打满**（专家 CPU 池 + MTP 流水线与 GPU 同时满载） | 几乎闲置（全层常驻 GPU） |
+| 内存 | **~40 GB**（47 GB 专家的热层驻留 RAM） | 低（15.75 GB 权重 + KV 全在显存） |
+| 显存 | 23.2-23.9 / 24 GiB | ~20 / 24 GiB |
+| 跑模型时本机还能办公吗 | **很受限** —— CPU / 内存 / 显存全被吃满 | **没问题** —— CPU 和内存大量富余，只有显存紧张 |
+| 正确角色 | **专用模型服务器**：本机只做"模型提供者"，其他设备经局域网 API 调用 | **同机助手**：一边正常用电脑办公，一边用本地 AI |
+
+**一句话**：这台电脑当"模型提供者"（本机不干别的）→ 用本仓库 Flash-Next；要在同一台电脑上一边工作一边用 → 用 [27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal)。
+
 ## 🚀 部署与启动（照着做即可）
 
 > 引擎 [Strata](https://github.com/Niko1221/Strata)（MIT License），Windows/Linux 均可；只需 NVIDIA 驱动，Python 3.12 由安装器自动装到用户目录（无需管理员权限）。
