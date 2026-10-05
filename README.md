@@ -17,10 +17,10 @@
 
 ## ⚡ Strata 引擎实测 —— 26 轮实测 · 7 个量化档位筛选 · 25+ 组参数扫描 · 峰值 110 tok/s
 
-**筛选过程**：2 个引擎家族（传统 CPU-offload 引擎、Strata 0.1.27/0.1.28）、7 个量化档位（AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16）、25+ 组参数扫描、12 个假设逐一排除——最终落位两个"最佳"：
+**筛选过程**：2 个引擎家族（传统 CPU-offload 引擎、Strata 0.1.27/0.1.28）、7 个量化档位（AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16）、25+ 组参数扫描、12 个假设逐一排除——最终落位唯一"最佳"：
 
-- **速度优先**：ISTA-DASLab GSQ-RCO Q2_0（512 专家完整版）· **93.5 tok/s**（追平桌面 5070 参考）
-- **质量优先（当前日常）**：ISTA-DASLab GSQ-RCO IQ3_XXS（512 专家完整版）· 基准 77.4 tok/s，日常真实负载峰值 **110.9 tok/s**、3000+ token 长输出仍 101-103 tok/s（256K + Vision 全开）
+- **最佳选择（当前日常）**：ISTA-DASLab GSQ-RCO IQ3_XXS（512 专家完整版）· 基准 77.4 tok/s，日常真实负载峰值 **110.9 tok/s**、3000+ token 长输出仍 101-103 tok/s（256K + Vision 全开）
+- 曾设"速度优先"线（Q2_0 · 93.5 tok/s）：后被 IQ3_XXS 的真实负载速度全面反超——草稿接受率 78% 对 44-54%，质量档反而更快——速度线已无存在意义，退役（数据保留见下文实录）
 - 附赠：ISTA-DASLab Coder IQ1_M（256/512 专家剪枝版，62.5 tok/s，内存减半，多开/超长上下文备选）
 
 ![速度对比](./assets/speed-comparison.svg)
@@ -40,16 +40,13 @@
 
 **① 安装引擎**：按 Strata 官方 README 获取引擎（下载 release 的 `strata-windows-x64.zip` 解压，或 git clone 源码仓库）。
 
-**② 一条命令完成模型打包与配置**（以我们的两个现役模型为例）：
+**② 一条命令完成模型打包与配置**（以我们的现役模型为例）：
 
 ```bat
 cd Strata/app
 
-:: 质量优先（本仓库当前日常）：IQ3_XXS
+:: 最佳选择（本仓库当前日常）：IQ3_XXS
 python setup.py --family qwen --model IQ3_XXS --context 131072 --vision yes --port 8081 --yes --gguf-dir "D://models//Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
-
-:: 速度优先：Q2_0
-python setup.py --family qwen --model Q2_0 --context 32768 --vision yes --port 8081 --yes --gguf-dir "D://models//Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
 ```
 
 - `--gguf-dir` 指向你**已下载好的** GGUF 分片目录；不加这个参数 setup 会重新下载数十 GB
@@ -113,8 +110,8 @@ python setup.py --family qwen --model Q2_0 --context 32768 --vision yes --port 8
 | # | 模型 / 量化 | 精度 | 仓库 | 状态 |
 |---|---|---|---|---|
 | 1 | AtomicChat AD-3.84bpw-IQ4_XS-M64 | 3.84 bpw | [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) | llama.cpp 时代主力 |
-| 2 | ISTA-DASLab GSQ-RCO **Q2_0** | ~2.2 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) | ✅ **现役（速度线）** |
-| 3 | ISTA-DASLab GSQ-RCO **IQ3_XXS** | ~3.1 bpw | 同上 | ✅ **现役（质量线）** |
+| 2 | ISTA-DASLab GSQ-RCO **Q2_0** | ~2.2 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) | ⬜ 退役（原速度线，被 IQ3_XXS 反超） |
+| 3 | ISTA-DASLab GSQ-RCO **IQ3_XXS** | ~3.1 bpw | 同上 | ✅ **现役（最佳选择）** |
 | 4 | ISTA-DASLab GSQ-RCO IQ3_S | ~3.44 bpw | 同上 | ⛔ 评估后否决 |
 | 5 | ISTA-DASLab GSQ-RCO IQ2_XS | ~2.5 bpw | 同上 | ⛔ 评估后未部署 |
 | 6 | ISTA-DASLab Coder **IQ1_M**（256/512 专家剪枝） | 1.89 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF) | ✅ 备选（省内存线） |
