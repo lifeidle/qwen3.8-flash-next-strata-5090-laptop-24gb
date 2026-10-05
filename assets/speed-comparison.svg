@@ -5,8 +5,8 @@
 
   <!-- scale: 0..100 tok/s maps to x 340..830 (490 px) -->
   <!-- rows -->
-  <!-- 1. llama.cpp 25.0 -->
-  <text x="330" y="112" font-size="13.5" text-anchor="end" fill="#1f2328">llama.cpp 3.84bpw (AD quant)</text>
+  <!-- 1. legacy CPU-offload engine 25.0 -->
+  <text x="330" y="112" font-size="13.5" text-anchor="end" fill="#1f2328">Legacy CPU-offload · 3.84bpw (AD quant)</text>
   <rect x="340" y="98" width="125" height="26" rx="4" fill="#8b949e"/>
   <text x="473" y="116" font-size="13.5" font-weight="700" fill="#57606a">25.0</text>
 
