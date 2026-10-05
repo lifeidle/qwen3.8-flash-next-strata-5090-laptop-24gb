@@ -34,6 +34,22 @@
 
 ![spec_min_p sweep](./assets/spec-minp-sweep.svg)
 
+## 🤔 Same 5090, two models: this repo (177B MoE) vs [27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal) — which one?
+
+Both repos run on the same RTX 5090 Laptop 24GB. The difference is not which model is stronger — it is **what role the machine is playing**:
+
+| | **Flash-Next 177B MoE** (this repo) | [Qwen3.8-27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal) |
+|---|---|---|
+| decode speed | **110.9 peak / 101-103 sustained tok/s** | 74-78 tok/s |
+| stable context | **256K** | 160K (VRAM cliff from ~180K) |
+| CPU | **saturated** (expert CPU pool + MTP pipeline load the GPU and CPU together) | nearly idle (all layers resident on GPU) |
+| RAM | **~40 GB** (hot expert tiers stay resident) | low (15.75 GB weights + KV all in VRAM) |
+| VRAM | 23.2-23.9 / 24 GiB | ~20 / 24 GiB |
+| Can you keep working on this PC while the model runs? | **barely** — CPU / RAM / VRAM are all consumed | **yes** — CPU and RAM have plenty of headroom; only VRAM is tight |
+| Right role | **dedicated model server**: the PC only serves the model, other devices call it over the LAN API | **same-desk assistant**: keep working on the PC while using the local AI |
+
+**One line**: machine as a "model provider" (nothing else runs on it) → this repo, Flash-Next. Working and using the AI on the same PC at the same time → [27B NVFP4](https://github.com/lifeidle/qwen3.8-27b-nvfp4-5090-laptop-24gb-optimal).
+
 ## 🚀 Deploy & launch (follow along)
 
 > Engine [Strata](https://github.com/Niko1221/Strata) (MIT License), Windows/Linux; only an NVIDIA driver is needed. Python 3.12 is installed into your user folder by the installer (no admin rights).
