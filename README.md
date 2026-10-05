@@ -1,6 +1,6 @@
 # Qwen3.8-Flash-Next 177B on an RTX 5090 Laptop
 
-**24 GB VRAM + 64 GB RAM · 256K Context · 93.5 tok/s (Strata) / 25 tok/s (llama.cpp) · Vision Enabled**
+**24 GB VRAM + 64 GB RAM · 256K Context · 110 tok/s peak · 100+ sustained · Vision Enabled**
 
 **中文** ｜ [English →](./README.en.md)
 
@@ -8,26 +8,26 @@
 ![VRAM](https://img.shields.io/badge/VRAM-24%20GB-0969da?style=flat-square)
 ![RAM](https://img.shields.io/badge/RAM-64%20GB-0969da?style=flat-square)
 ![Context](https://img.shields.io/badge/context-256K%20full-2ea44f?style=flat-square)
-![Speed](https://img.shields.io/badge/speed-25.0%20tok%2Fs-8250df?style=flat-square)
-![Quant](https://img.shields.io/badge/quant-AD--3.84bpw-bf8700?style=flat-square)
+![Speed](https://img.shields.io/badge/speed-up%20to%20110%20tok%2Fs-8250df?style=flat-square)
+![Quant](https://img.shields.io/badge/quant-IQ3_XXS-bf8700?style=flat-square)
 ![Vision](https://img.shields.io/badge/vision-enabled-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 ---
 
-## ⚡ Strata 引擎实测 —— 26 轮实测 · 7 个量化档位筛选 · 25+ 组参数扫描 · 25 → 93.5 tok/s
+## ⚡ Strata 引擎实测 —— 26 轮实测 · 7 个量化档位筛选 · 25+ 组参数扫描 · 峰值 110 tok/s
 
-**筛选过程**：2 个引擎家族（llama.cpp b10840/b10889、Strata 0.1.27/0.1.28）、7 个量化档位（AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16）、25+ 组参数扫描、12 个假设逐一排除——最终落位两个"最佳"：
+**筛选过程**：2 个引擎家族（传统 CPU-offload 引擎、Strata 0.1.27/0.1.28）、7 个量化档位（AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16）、25+ 组参数扫描、12 个假设逐一排除——最终落位两个"最佳"：
 
-- **速度优先**：ISTA-DASLab GSQ-RCO Q2_0（512 专家完整版）· **93.5 tok/s**（比 llama.cpp 时代快 3.7 倍，追平桌面 5070 参考）
-- **质量优先**：ISTA-DASLab GSQ-RCO IQ3_XXS（512 专家完整版）· 77.4 tok/s（256K + Vision 日常配置下 74.4 tok/s）
+- **速度优先**：ISTA-DASLab GSQ-RCO Q2_0（512 专家完整版）· **93.5 tok/s**（追平桌面 5070 参考）
+- **质量优先（当前日常）**：ISTA-DASLab GSQ-RCO IQ3_XXS（512 专家完整版）· 基准 77.4 tok/s，日常真实负载峰值 **110.9 tok/s**、3000+ token 长输出仍 101-103 tok/s（256K + Vision 全开）
 - 附赠：ISTA-DASLab Coder IQ1_M（256/512 专家剪枝版，62.5 tok/s，内存减半，多开/超长上下文备选）
 
 ![速度对比](./assets/speed-comparison.svg)
 
 ### 四个重点发现
 
-1. **GPU 与 CPU 第一次同时占满**：llama.cpp 时代 CPU 单核钉死 100%、GPU 闲 20-40%；Strata 三层架构（热专家显存缓存 + CPU 池 + MTP 流水线重叠）让两个处理器同时满载——这是 3.7 倍提升的结构性根因
+1. **GPU 与 CPU 第一次同时占满**：传统 CPU offload 方案 CPU 单核钉死 100%、GPU 闲 20-40%；Strata 三层架构（热专家显存缓存 + CPU 池 + MTP 流水线重叠）让两个处理器同时满载——这是数倍提升的结构性根因
 2. **MTP 坏死之谜**：31 个草稿层权重文件里 20 个因 HTTP Range 被镜像站忽略而下载损坏（存成了 shard 头部），sha256 校验无法发现；自编译引擎加 NaN 探针定位 → 重拉修复 → MTP 接受率 0% → 70.8%。完整复盘：[docs/mtp-corruption-postmortem.md](./docs/mtp-corruption-postmortem.md)（已报上游 [Strata#327](https://github.com/Niko1221/Strata/issues/327)，**作者确认并于 v0.1.32 修复**：强制校验 HTTP 206 + Content-Range、对照官方 pinned 版本逐张量 sha256、损坏自动重拉）
 3. **spec_min_p 峰值随草稿质量漂移**：Q2_0 峰在 0.3，IQ3_XXS 峰在 0.7——换模型必须重扫（见下方曲线）
 4. **256K 上下文几乎免费**：KV streaming 下 65K/128K/256K 速度几乎相同，64GB 内存实测 256K 稳定；Vision 与 256K 并存（每图 ≤1024 token，单会话可塞 250+ 张图）
