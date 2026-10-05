@@ -17,10 +17,10 @@
 
 ## ⚡ Strata engine era — 26 measured rounds · 7 quant tiers screened · 25+ parameter sweeps · peak 110 tok/s
 
-**The screening**: 2 engine families (legacy CPU-offload engine, Strata 0.1.27/0.1.28), 7 quant tiers (AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16), 25+ parameter sweep points, 12 hypotheses eliminated one by one — landing on two "bests":
+**The screening**: 2 engine families (legacy CPU-offload engine, Strata 0.1.27/0.1.28), 7 quant tiers (AtomicChat AD-3.84bpw / ISTA-DASLab Coder IQ1_M / Q2_0 / IQ2_XS / IQ3_XXS / IQ3_S / Qwen BF16), 25+ parameter sweep points, 12 hypotheses eliminated one by one — landing on one clear "best":
 
-- **Speed-first**: ISTA-DASLab GSQ-RCO Q2_0 (full 512-expert) · **93.5 tok/s** (matches the desktop 5070 reference)
-- **Quality-first (current daily driver)**: ISTA-DASLab GSQ-RCO IQ3_XXS (full 512-expert) · 77.4 tok/s benchmark; **110.9 tok/s peak** on real-world workloads, 101-103 tok/s on 3,000+ token outputs (256K + Vision both on)
+- **The best (current daily driver)**: ISTA-DASLab GSQ-RCO IQ3_XXS (full 512-expert) · 77.4 tok/s benchmark; **110.9 tok/s peak** on real-world workloads, 101-103 tok/s on 3,000+ token outputs (256K + Vision both on)
+- A "speed-first" line (Q2_0 · 93.5 tok/s) used to exist here — then IQ3_XXS overtook it on real-world speed (draft acceptance 78% vs 44-54%: the quality tier is simply faster). The speed tier lost its reason to exist and is retired (data kept in the log below)
 - Bonus: ISTA-DASLab Coder IQ1_M (256/512-expert pruned; 62.5 tok/s, half the RAM — multi-instance / extra-long context backup)
 
 ![speed comparison](./assets/speed-comparison.svg)
@@ -40,16 +40,13 @@
 
 **① Get the engine**: follow the Strata README (download the release `strata-windows-x64.zip`, or git clone the source repo).
 
-**② One command packs the model and writes the config** (our two active models):
+**② One command packs the model and writes the config** (our active model):
 
 ```bat
 cd Strata/app
 
-:: quality-first (the daily config in this repo): IQ3_XXS
+:: the best (the daily config in this repo): IQ3_XXS
 python setup.py --family qwen --model IQ3_XXS --context 131072 --vision yes --port 8081 --yes --gguf-dir "D://models//Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
-
-:: speed-first: Q2_0
-python setup.py --family qwen --model Q2_0 --context 32768 --vision yes --port 8081 --yes --gguf-dir "D://models//Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
 ```
 
 - `--gguf-dir` must point to a folder with the GGUF shards **you already downloaded**; without it, setup re-downloads tens of GB
@@ -113,8 +110,8 @@ python setup.py --family qwen --model Q2_0 --context 32768 --vision yes --port 8
 | # | Model / quant | Effective | Repo | Status |
 |---|---|---|---|---|
 | 1 | AtomicChat AD-3.84bpw-IQ4_XS-M64 | 3.84 bpw | [AtomicChat/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/AtomicChat/Qwen3.8-Flash-Next-GGUF) | llama.cpp era main |
-| 2 | ISTA-DASLab GSQ-RCO **Q2_0** | ~2.2 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) | ✅ **active (speed)** |
-| 3 | ISTA-DASLab GSQ-RCO **IQ3_XXS** | ~3.1 bpw | same repo | ✅ **active (quality)** |
+| 2 | ISTA-DASLab GSQ-RCO **Q2_0** | ~2.2 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF) | ⬜ retired (was the speed tier; overtaken by IQ3_XXS) |
+| 3 | ISTA-DASLab GSQ-RCO **IQ3_XXS** | ~3.1 bpw | same repo | ✅ **active (the best)** |
 | 4 | ISTA-DASLab GSQ-RCO IQ3_S | ~3.44 bpw | same repo | ⛔ evaluated, rejected |
 | 5 | ISTA-DASLab GSQ-RCO IQ2_XS | ~2.5 bpw | same repo | ⛔ evaluated, not deployed |
 | 6 | ISTA-DASLab Coder **IQ1_M** (256/512-expert pruned) | 1.89 bpw | [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF) | ✅ backup (low-RAM) |
